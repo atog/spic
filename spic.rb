@@ -57,14 +57,6 @@ class Image < Sequel::Model
   end
 end
 
-get '/i/:id' do
-  if @image = Image.find(:id => params[:id])    
-    redirect @image.url
-  else
-    redirect '/'
-  end
-end
-
 get '/' do
   erb :index
 end
