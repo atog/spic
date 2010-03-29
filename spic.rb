@@ -10,7 +10,8 @@ configure do
     @@settings = {"s3_access_key_id" => ENV['S3_KEY'],
                   "s3_secret_access_key" => ENV['S3_SECRET'],
                   "s3_bucket" =>  ENV['S3_BUCKET'],
-                  "db_url" => ENV['DB_URL']}
+                  "db_url" => ENV['DB_URL'],
+                  "secret" => ENV['SECRET']}
   end
   CarrierWave.configure do |config|
     config.s3_access_key_id = @@settings["s3_access_key_id"]
