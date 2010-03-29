@@ -3,6 +3,8 @@ require 'sinatra'
 require 'sinatra/sequel'
 require 'carrierwave'
 
+ROOT = Dir.pwd
+
 configure do
   if File.exist?("settings.yml")
     @@settings = YAML.load_file("settings.yml")
