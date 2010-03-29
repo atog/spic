@@ -9,7 +9,7 @@ configure do
   else
     @@settings = {"s3_access_key_id" => ENV['S3_KEY'],
                   "s3_secret_access_key" => ENV['S3_SECRET'],
-                  "s3_bucket" =>  ENV['S3_BUCKET'],
+                  "s3_bucket" => ENV['S3_BUCKET'],
                   "secret" => ENV['SECRET']}
   end
   CarrierWave.configure do |config|
@@ -40,6 +40,11 @@ class ImageUploader < CarrierWave::Uploader::Base
   def store_dir
      nil  #store files at root level
   end
+  
+  def cache_dir
+    "tmp"
+  end
+  
 end
 
 class Image < Sequel::Model
