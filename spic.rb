@@ -42,7 +42,7 @@ class ImageUploader < CarrierWave::Uploader::Base
   end
   
   def cache_dir
-    File.join(File.dirname(__FILE__), "tmp")
+    "#{ROOT}/tmp/"
   end
   
 end
