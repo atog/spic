@@ -4,7 +4,14 @@ require 'sinatra/sequel'
 require 'carrierwave'
 
 configure do
-  @@settings = YAML.load_file("settings.yml")
+  if File.exist?("settings.yml")
+    @@settings = YAML.load_file("settings.yml")
+  else
+    @@settings = {"s3_access_key_id" => ENV['S3_KEY'],
+                  "s3_secret_access_key" => ENV['S3_SECRET'],
+                  "s3_bucket" =>  ENV['S3_BUCKET'],
+                  "db_url" => ENV['DB_URL']}
+  end
   CarrierWave.configure do |config|
     config.s3_access_key_id = @@settings["s3_access_key_id"]
     config.s3_secret_access_key = @@settings["s3_secret_access_key"]
