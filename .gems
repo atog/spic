@@ -1,0 +1,4 @@
+sinatra -v 1.0
+sinatra-sequel -v 0.9.0
+carrierwave -v 0.4.5
+right_aws -v 1.10.0
