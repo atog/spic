@@ -61,10 +61,10 @@ get '/' do
   erb :index
 end
 
-get '/u/*'
+get '/u/*' do
   if params[:splat]
     @image = Image.find(:id => params[:splat].first)
-  erb :url
+    erb :url
   else
     redirect '/'
   end
