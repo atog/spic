@@ -61,6 +61,15 @@ get '/' do
   erb :index
 end
 
+get '/u/*'
+  if params[:splat]
+    @image = Image.find(:id => params[:splat].first)
+  erb :url
+  else
+    redirect '/'
+  end
+end
+
 get "/#{@@settings["secret"]}" do
   @secret = @@settings["secret"]
   @images = Image.order(:id.desc)
@@ -69,9 +78,9 @@ end
 
 post '/p' do
   if @@settings["secret"] == params[:secret]
-    Image.create(:name => params[:name], :created_at => Time.now)
+    image = Image.create(:name => params[:name], :created_at => Time.now)
   end
-  redirect '/'
+  redirect "/u/#{image.id}"
 end
 
 post '/d' do
@@ -105,3 +114,6 @@ __END__
   </li>
   <% end %>
 </ul>
+
+@@ url
+<%=@image.url%>
