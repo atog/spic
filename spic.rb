@@ -38,20 +38,20 @@ end
 
 class ImageUploader < CarrierWave::Uploader::Base
   storage :right_s3 #european bucket
-  
+
   def store_dir
      nil  #store files at root level
   end
-  
+
   def cache_dir
     "#{ROOT}/tmp/"
   end
-  
+
 end
 
 class Image < Sequel::Model
   mount_uploader :name, ImageUploader
-  
+
   def url #Using @image.name.url gives a AWS S3 PermanentRedirect
     "http://#{@@settings["s3_bucket"]}.s3.amazonaws.com/#{self.name.path}"
   end
@@ -71,14 +71,14 @@ post '/p' do
   if @@settings["secret"] == params[:secret]
     Image.create(:name => params[:name], :created_at => Time.now)
   end
-  redirect '/'    
+  redirect '/'
 end
 
 post '/d' do
   if (@@settings["secret"] == params[:secret]) && (@image = Image.find(:id => params[:id]))
     @image.destroy
   end
-  redirect '/'    
+  redirect '/'
 end
 
 __END__
@@ -101,7 +101,7 @@ __END__
     <form action="/d" method="POST" id="i-<%= image.id %>">
       <input type='hidden' name='secret' value='<%= @secret %>' />
       <input type='hidden' name='id' value='<%= image.id %>' />
-    </form>    
+    </form>
   </li>
-  <% end %>  
+  <% end %>
 </ul>
