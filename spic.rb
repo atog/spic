@@ -105,7 +105,7 @@ __END__
 <ul>
   <% @images.each do |image| %>
   <li>
-    <a href="<%=image.url%>"><%= image.url %></a> -
+    <a href="<%=image.url%>"><%= image.name.path %></a> -
     <a href="#" onclick="document.forms['i-<%= image.id %>'].submit();">delete</a>
     <form action="/d" method="POST" id="i-<%= image.id %>">
       <input type='hidden' name='secret' value='<%= @secret %>' />
