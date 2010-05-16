@@ -35,10 +35,9 @@ end
 migration "create images table" do
   database.create_table :images do
     primary_key :id
-    text        :name
+    string      :name_s3
+    string      :name_flickr
     timestamp   :created_at, :allow_null => false
-    boolean     :flickr, :default => false
-    index :name
   end
 end
 
@@ -52,40 +51,51 @@ end
 class FlickrStorage < CarrierWave::Storage::Abstract
 
   def store!(file)
-    flickr = Flickr.new({
-                          :key => @@settings["flickr_key"],
+    flickr = Flickr.new({ :key => @@settings["flickr_key"],
                           :secret => @@settings["flickr_secret"],
-                          :token => Token.order(:id.asc).last.token
-                        })
-    flickr.uploader.upload(file.path, :tags => "spic")
+                          :token => Token.order(:id.asc).last.token})
+    response = flickr.uploader.upload(file.path, :tags => "spic")
+    puts response.photoid
   rescue StandardError => e
     puts "PAKOT: #{e}"
     puts e.backtrace.join("\n")
   end
-
 end
 
-class ImageUploader < CarrierWave::Uploader::Base
-  # storage :right_s3 #european bucket
-  storage FlickrStorage
-
+class SpicUploader < CarrierWave::Uploader::Base
   def store_dir
-     nil  #store files at root level
+    nil  #store files at root level
   end
 
   def cache_dir
     "#{ROOT}/tmp/"
   end
+end
 
+class S3ImageUploader < SpicUploader
+  storage :right_s3 #european bucket
+end
+
+class FlickrImageUploader < SpicUploader
+  storage FlickrStorage
 end
 
 class Token < Sequel::Model; end
 
 class Image < Sequel::Model
-  mount_uploader :name, ImageUploader
+  mount_uploader :name_s3, S3ImageUploader
+  mount_uploader :name_flickr, FlickrImageUploader
+
+  def name
+    self.name_s3.path || self.name_flickr.path
+  end
 
   def url #Using @image.name.url gives a AWS S3 PermanentRedirect
-    "http://#{@@settings["s3_bucket"]}.s3.amazonaws.com/#{self.name.path}"
+    if self.name_s3.path
+      "http://#{@@settings["s3_bucket"]}.s3.amazonaws.com/#{self.name}"
+    else
+      "http://flickr.com"
+    end
   end
 end
 
@@ -110,7 +120,11 @@ end
 
 post '/p' do
   if @@settings["secret"] == params[:secret]
-    image = Image.create(:name => params[:name], :created_at => Time.now)
+    if params[:flickr]
+      image = Image.create(:name_flickr => params[:name], :created_at => Time.now)
+    else
+      image = Image.create(:name_s3 => params[:name], :created_at => Time.now)
+    end
   end
   redirect "/u/#{image.id}"
 end
@@ -143,13 +157,14 @@ __END__
 <form action="/p" method="POST" enctype="multipart/form-data">
   <input type='hidden' name='secret' value='<%= @secret %>' />
   <input type='file' name="name" />
+  <input type='checkbox' name='flickr' />
   <input type='submit'/>
 </form>
 
 <ul>
   <% @images.each do |image| %>
   <li>
-    <a href="<%=image.url%>"><%= image.name.path %></a> -
+    <a href="<%=image.url%>"><%= image.name %></a> -
     <a href="#" onclick="document.forms['i-<%= image.id %>'].submit();">delete</a>
     <form action="/d" method="POST" id="i-<%= image.id %>">
       <input type='hidden' name='secret' value='<%= @secret %>' />
@@ -160,7 +175,7 @@ __END__
 </ul>
 
 @@ url
-<%=@image.url if @image %>
+<%=@image.url %>
 
 @@ flickr_success
 <p>Flickr Authentication Success!</p>
