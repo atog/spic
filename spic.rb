@@ -48,8 +48,29 @@ migration "create flickr token table" do
   end
 end
 
+class FlickrStorage #< CarrierWave::Storage::Abstract
+
+  def store!(file)
+    puts "boe"
+    flickr = Flickr.new({
+                          :key => @@settings["flickr_key"],
+                          :secret => @@settings["flickr_secret"],
+                          :token => Token.last.token
+                        })
+    flickr.uploader.upload(file.path, :tags => "spic")
+  rescue StandardError => e
+    puts e
+  end
+
+  def retrieve!(identifier)
+    "called retrieve"
+  end
+
+end
+
 class ImageUploader < CarrierWave::Uploader::Base
   storage :right_s3 #european bucket
+  # storage FlickrStorage
 
   def store_dir
      nil  #store files at root level
@@ -142,7 +163,7 @@ __END__
 </ul>
 
 @@ url
-<%=@image.url%>
+<%=@image.url if @image %>
 
 @@ flickr_success
 <p>Flickr Authentication Success!</p>
