@@ -2,6 +2,7 @@ require 'rubygems'
 require 'sinatra'
 require 'sinatra/sequel'
 require 'carrierwave'
+require 'flickr_fu'
 
 ROOT = Dir.pwd
 
@@ -9,10 +10,14 @@ configure do
   if File.exist?("settings.yml")
     @@settings = YAML.load_file("settings.yml")
   else
-    @@settings = {"s3_access_key_id" => ENV['S3_KEY'],
-                  "s3_secret_access_key" => ENV['S3_SECRET'],
-                  "s3_bucket" => ENV['S3_BUCKET'],
-                  "secret" => ENV['SECRET']}
+    @@settings = {
+      "s3_access_key_id" => ENV['S3_KEY'],
+      "s3_secret_access_key" => ENV['S3_SECRET'],
+      "s3_bucket" => ENV['S3_BUCKET'],
+      "secret" => ENV['SECRET'],
+      "flickr_key" => ENV['FLICKR_KEY'],
+      "flickr_secret" => ENV["FLICKR_SECRET"]
+    }
   end
   CarrierWave.configure do |config|
     config.s3_access_key_id = @@settings["s3_access_key_id"]
@@ -36,6 +41,13 @@ migration "create images table" do
   end
 end
 
+migration "create flickr token table" do
+  database.create_table :tokens do
+    primary_key :id
+    text :token
+  end
+end
+
 class ImageUploader < CarrierWave::Uploader::Base
   storage :right_s3 #european bucket
 
@@ -48,6 +60,8 @@ class ImageUploader < CarrierWave::Uploader::Base
   end
 
 end
+
+class Token < Sequel::Model; end
 
 class Image < Sequel::Model
   mount_uploader :name, ImageUploader
@@ -90,6 +104,18 @@ post '/d' do
   redirect '/'
 end
 
+get '/flickr-authenticate' do
+  flickr = Flickr.new({:key => @@settings["flickr_key"], :secret => @@settings["flickr_secret"]})
+  redirect flickr.auth.url(:write)
+end
+
+get '/flickr-callback' do
+  flickr = Flickr.new({:key => @@settings["flickr_key"], :secret => @@settings["flickr_secret"]})
+  flickr.auth.frob = params[:frob]
+  Token.create(:token => flickr.auth.token.token)
+  erb :flickr_success
+end
+
 __END__
 
 @@ index
@@ -117,3 +143,6 @@ __END__
 
 @@ url
 <%=@image.url%>
+
+@@ flickr_success
+<p>Flickr Authentication Success!</p>
