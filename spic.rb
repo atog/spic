@@ -37,6 +37,7 @@ migration "create images table" do
     primary_key :id
     text        :name
     timestamp   :created_at, :allow_null => false
+    boolean     :flickr, :default => false
     index :name
   end
 end
@@ -48,29 +49,25 @@ migration "create flickr token table" do
   end
 end
 
-class FlickrStorage #< CarrierWave::Storage::Abstract
+class FlickrStorage < CarrierWave::Storage::Abstract
 
   def store!(file)
-    puts "boe"
     flickr = Flickr.new({
                           :key => @@settings["flickr_key"],
                           :secret => @@settings["flickr_secret"],
-                          :token => Token.last.token
+                          :token => Token.order(:id.asc).last.token
                         })
     flickr.uploader.upload(file.path, :tags => "spic")
   rescue StandardError => e
-    puts e
-  end
-
-  def retrieve!(identifier)
-    "called retrieve"
+    puts "PAKOT: #{e}"
+    puts e.backtrace.join("\n")
   end
 
 end
 
 class ImageUploader < CarrierWave::Uploader::Base
-  storage :right_s3 #european bucket
-  # storage FlickrStorage
+  # storage :right_s3 #european bucket
+  storage FlickrStorage
 
   def store_dir
      nil  #store files at root level
